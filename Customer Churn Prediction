@@ -1,0 +1,179 @@
+# Cleaning Of Data
+
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt 
+%matplotlib inline
+
+data = pd.read_csv('churn_prediction.csv')
+
+data.head()
+
+data.shape
+
+data.describe()
+
+# Null Value Removal
+
+data.isnull().sum()
+
+data.head(30)
+
+gkk = data.groupby(['occupation', 'city']) 
+
+gkk.head()
+
+gkk.first()
+
+d=data.groupby(['churn']).mean()
+
+d
+
+data['gender'].value_counts().plot(kind = 'bar')
+
+data = data.drop("city", axis=1)
+data = data.drop("customer_id", axis=1)
+data = data.drop("gender", axis=1)
+data = data.drop("age", axis=1)
+
+
+corr_matrix = data.corr()
+
+corr_matrix["churn"].sort_values(ascending=False)
+
+data.isnull().sum()
+
+data['occupation'].value_counts().plot(kind = 'bar')
+
+mn=data['days_since_last_transaction'].mean()
+
+data['days_since_last_transaction'].fillna(mn, inplace=True)
+
+data.isnull().sum()
+
+data = data.drop("dependents", axis=1)
+
+data.isnull().sum()
+
+# Using Label Encoder To Tackle Missing Values
+
+data['occupation'].unique() 
+
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+
+data['occupation'].value_counts()
+
+le.fit_transform(['self_employed', 'salaried', 'student', 'retired', 'company'])
+
+data['occupation'].value_counts()
+
+data['occupation'].fillna('self_employed', inplace=True)
+
+data.isnull().sum()
+
+data['occupation'] = data['occupation'].map({'self_employed': 0,
+                                                     'salaried': 1,
+                                                     'student': 2,
+                                                     'retired': 3,
+                                                     'company': 4
+                                                    })
+
+data['occupation'].unique()
+
+# Quaterly Average Balance
+
+x=len(data['occupation'])
+
+quarter_average_balance=[]
+
+qab=(data['average_monthly_balance_prevQ2'][0]-data['average_monthly_balance_prevQ'][0])/data['average_monthly_balance_prevQ'][0]
+
+for i in range(0,x):
+    qab=(data['average_monthly_balance_prevQ2'][i]-data['average_monthly_balance_prevQ'][i])/data['average_monthly_balance_prevQ'][i]
+    quarter_average_balance.append(qab)
+    
+data['quarter_average_balance']=quarter_average_balance
+
+corr_matrix = data.corr()
+
+corr_matrix["churn"].sort_values(ascending=False)
+
+data.groupby('churn')['quarter_average_balance'].mean().plot.bar()
+
+# Train Test Split
+
+x = data.drop(['churn'],axis=1)
+y = data['churn']
+
+from sklearn.model_selection import train_test_split
+train_x, valid_x, train_y, valid_y= train_test_split(x, y, test_size = 0.3, random_state=2)
+
+# Churn Prediction using  XGBoost
+
+from xgboost import XGBClassifier
+
+model = XGBClassifier()
+model.fit(train_x, train_y)
+
+pred_train = model.predict(train_x)
+pred_valid = model.predict(valid_x)
+
+Confusion Matrix Analysis
+
+from sklearn.metrics import confusion_matrix
+
+For Train Set
+
+confusion_matrix(train_y, pred_train)
+
+For Validation Set
+
+confusion_matrix(valid_y, pred_valid)
+
+# Precision, Recall & Accuracy
+
+from sklearn.metrics import precision_score, recall_score, accuracy_score
+
+ Precision For Train Set
+
+precision_score(train_y, pred_train)
+
+Precision For Validation Set
+
+precision_score(valid_y, pred_valid)
+
+Recall For Train Set
+
+recall_score(train_y, pred_train)
+
+Recall For Validation Set
+
+recall_score(valid_y, pred_valid)
+
+Accuracy For Train Set
+
+accuracy_score(train_y, pred_train)
+
+Accuracy For Validation Set
+
+accuracy_score(valid_y, pred_valid)
+
+# Model Prediction
+
+pred_train_xb = model.predict_proba(train_x)
+pred_valid_xb = model.predict_proba(valid_x)
+
+from sklearn.metrics import roc_auc_score
+
+AUC_ROC Score For Train Set
+
+roc_auc_score(train_y, pred_train_xb[:,1])
+
+### 0.863204042638835
+
+AUC_ROC Score For Validation Set
+
+roc_auc_score(valid_y, pred_valid_xb[:,1])
+
+###0.8451182568408184
